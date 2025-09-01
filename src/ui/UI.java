@@ -2,15 +2,14 @@ package ui;
 
 public class UI {
 
-    public ConfigWindow configWindow;
+    public ConfigFrame configFrame;
 
     public UI() {
-        configWindow = new ConfigWindow();
+        configFrame = new ConfigFrame();
     }
 
     public void init() {
-        configWindow.setSize(300, 200);
-        configWindow.setVisible(true);
+        
     }
 
 }
