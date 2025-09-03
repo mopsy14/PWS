@@ -1,4 +1,4 @@
-package ui;
+package PWS.ui;
 
 import javax.swing.*;
 import java.awt.*;
