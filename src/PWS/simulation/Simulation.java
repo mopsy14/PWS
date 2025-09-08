@@ -1,6 +1,10 @@
 package PWS.simulation;
 
+import PWS.Main;
+import PWS.RunningState;
 import PWS.simulation.bodies.SpaceBody;
+import PWS.ui.SimulationControlFrame;
+import PWS.ui.SimulationVisualizeFrame;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,14 +17,28 @@ public class Simulation {
     public List<SpaceBody> spaceBodies = new ArrayList<>();
     ConcurrentLinkedQueue tasks = new ConcurrentLinkedQueue<>();
     ConcurrentLinkedQueue newTasks = new ConcurrentLinkedQueue<>();
+    SimulationControlFrame controlFrame;
+    SimulationVisualizeFrame visualizeFrame;
 
-    public Simulation() {
+    //Configuration:
+    public boolean useUI;
+
+    public Simulation(boolean useUI) {
         INSTANCE = this;
+
+        //Configuration:
+        this.useUI = useUI;
+
+        controlFrame = new SimulationControlFrame();
+        if (useUI)
+            visualizeFrame = new SimulationVisualizeFrame();
         workerThreads.add(new Worker());
     }
 
     public void startSimulation() {
         if (simulationThread == null || !simulationThread.isAlive()) {
+            Main.state = RunningState.SIMULATING;
+
             simulationThread = new Thread("Simulation thread") {
                 @Override
                 public void run() {
@@ -46,5 +64,12 @@ public class Simulation {
         }
 
         simulationThread = null;
+    }
+
+    public void disposeAWT() {
+        if (controlFrame != null)
+            controlFrame.dispose();
+        if (visualizeFrame != null)
+            visualizeFrame.dispose();
     }
 }

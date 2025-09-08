@@ -1,17 +1,18 @@
 package PWS;
 
-import PWS.ui.UI;
+import PWS.simulation.Simulation;
+import PWS.ui.ConfigFrame;
 
 public class Main {
-    public static UI ui = new UI();
     public static volatile RunningState state = RunningState.CONFIG_SCREEN;
+    public static ConfigFrame configFrame;
 
     @SuppressWarnings("CallToPrintStackTrace")
     public static void main(String[] args) {
         Logger.initLoggers();
 
         try {
-            ui.init();
+            configFrame = new ConfigFrame();
 
             while (true) {
 
@@ -23,6 +24,11 @@ public class Main {
         } catch (Exception e) {
             System.err.println("An error occurred, closing application");
             e.printStackTrace();
+        }
+
+        configFrame.dispose();
+        if (Simulation.INSTANCE != null) {
+            Simulation.INSTANCE.disposeAWT();
         }
 
         Logger.closeLoggerFileOutputStream();
