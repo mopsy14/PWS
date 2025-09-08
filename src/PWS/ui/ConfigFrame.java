@@ -4,17 +4,21 @@ import javax.swing.*;
 import java.awt.*;
 
 public class ConfigFrame extends JFrame {
-    Label randomLabel = new Label("Hoi Masha");
+    JPanel componentContainer = new JPanel();
+    JButton startButton = new JButton("Start Simulation");
     public ConfigFrame() throws HeadlessException {
         super("Simulation Configuration");
-        setUndecorated(false);
-        setSize(600,400);
+        setResizable(false);
+        setSize(1000,700);
+        setLayout(null);
         setVisible(true);
 
+        componentContainer.setSize(1000,700);
+        componentContainer.setLayout(null);
+        add(componentContainer);
 
-        randomLabel.setSize(100,100);
-        randomLabel.setLocation(100,100);
-        randomLabel.setVisible(true);
-        add(randomLabel);
+        startButton.setSize(200,25);
+        startButton.setLocation(400,620);
+        componentContainer.add(startButton);
     }
 }
