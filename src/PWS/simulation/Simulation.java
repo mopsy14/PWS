@@ -15,7 +15,7 @@ public class Simulation {
     Thread simulationThread = null;
     ArrayList<Thread> workerThreads = new ArrayList<>();
     public List<SpaceBody> spaceBodies = new ArrayList<>();
-    ConcurrentLinkedQueue tasks = new ConcurrentLinkedQueue<>();
+    ConcurrentLinkedQueue<Runnable> tasks = new ConcurrentLinkedQueue<>();
     SimulationControlFrame controlFrame;
     SimulationVisualizeFrame visualizeFrame;
     double stepSize = 1;
@@ -61,8 +61,15 @@ public class Simulation {
                 for (SpaceBody body : spaceBodies) {
                     tasks.add(body::updateVelocity);
                 }
+                while (!simulationStepDone) {
+                    Thread.sleep(10);
+                }
+
                 for (SpaceBody body : spaceBodies) {
                     tasks.add(body::updatePosition);
+                }
+                while (!simulationStepDone) {
+                    Thread.sleep(10);
                 }
             }
 
