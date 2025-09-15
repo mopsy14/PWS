@@ -13,12 +13,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Simulation {
     public static Simulation INSTANCE = null;
     Thread simulationThread = null;
-    List<Thread> workerThreads = new ArrayList<>();
+    ArrayList<Thread> workerThreads = new ArrayList<>();
     public List<SpaceBody> spaceBodies = new ArrayList<>();
     ConcurrentLinkedQueue tasks = new ConcurrentLinkedQueue<>();
-    ConcurrentLinkedQueue newTasks = new ConcurrentLinkedQueue<>();
     SimulationControlFrame controlFrame;
     SimulationVisualizeFrame visualizeFrame;
+    double stepSize = 1;
+    long stepAmount = 1_000_000;
 
     //Configuration:
     public boolean useUI;
@@ -32,7 +33,6 @@ public class Simulation {
         controlFrame = new SimulationControlFrame();
         if (useUI)
             visualizeFrame = new SimulationVisualizeFrame();
-        workerThreads.add(new Worker());
     }
 
     public void startSimulation() {
@@ -55,7 +55,16 @@ public class Simulation {
         try {
             System.out.println("Started simulating");
 
+            startWorkerThreads(4);
 
+            for (int i = 0; i < stepAmount; i++) {
+                for (SpaceBody body : spaceBodies) {
+                    tasks.add(body::updateVelocity);
+                }
+                for (SpaceBody body : spaceBodies) {
+                    tasks.add(body::updatePosition);
+                }
+            }
 
             System.out.println("Finished simulating");
         } catch (Exception e) {
@@ -66,10 +75,21 @@ public class Simulation {
         simulationThread = null;
     }
 
+    private void startWorkerThreads(int amount) {
+        workerThreads.clear();
+        for (int i = 0; i < amount; i++) {
+            workerThreads.add(new Thread(new Worker()));
+        }
+    }
+
     public void disposeAWT() {
         if (controlFrame != null)
             controlFrame.dispose();
         if (visualizeFrame != null)
             visualizeFrame.dispose();
+    }
+
+    public double getStepSize() {
+        return stepSize;
     }
 }

@@ -1,9 +1,12 @@
 package PWS.simulation;
 
-public class Worker extends Thread {
+import PWS.Main;
+import PWS.RunningState;
+
+public class Worker implements Runnable {
     @Override
     public void run() {
-        while (true) {
+        while (Main.state == RunningState.SIMULATING) {
             Runnable runnable = (Runnable) Simulation.INSTANCE.tasks.poll();
             if (runnable==null) {
                 try {
