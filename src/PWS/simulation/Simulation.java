@@ -2,13 +2,18 @@ package PWS.simulation;
 
 import PWS.Main;
 import PWS.RunningState;
+import PWS.simulation.bodies.Planet;
 import PWS.simulation.bodies.SpaceBody;
+import PWS.simulation.bodies.Star;
 import PWS.ui.SimulationControlFrame;
 import PWS.ui.SimulationVisualizeFrame;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class Simulation {
     public static Simulation INSTANCE = null;
@@ -18,8 +23,9 @@ public class Simulation {
     ConcurrentLinkedQueue<Runnable> tasks = new ConcurrentLinkedQueue<>();
     SimulationControlFrame controlFrame;
     SimulationVisualizeFrame visualizeFrame;
+    volatile CountDownLatch remainingTasks = null;
     double stepSize = 1;
-    long stepAmount = 1_000_000;
+    long stepAmount = 15_768_000;
 
     //Configuration:
     public boolean useUI;
@@ -38,6 +44,9 @@ public class Simulation {
     public void startSimulation() {
         if (simulationThread == null || !simulationThread.isAlive()) {
             Main.state = RunningState.SIMULATING;
+            spaceBodies.clear();
+            spaceBodies.add(new Planet(1.495e11,0,0,5.9722e24,0,0,2.978e4,0));
+            spaceBodies.add(new Star(0,0,0,1.988416e30,0,0,0,0,0));
 
             simulationThread = new Thread("Simulation thread") {
                 @Override
@@ -45,6 +54,7 @@ public class Simulation {
                     runSimulation();
                 }
             };
+            simulationThread.start();
         } else {
             System.err.println("Cannot start simulating thread because the thread is still running");
         }
@@ -58,22 +68,30 @@ public class Simulation {
             startWorkerThreads(4);
 
             for (int i = 0; i < stepAmount; i++) {
+                if (i%10000==0) {
+                    visualizeFrame.updateVisualization();
+
+                    if (i % 1000000 == 0) {
+                        System.out.println("Iteration " + i / 1000000 + "e+6");
+                    }
+                }
+                remainingTasks = new CountDownLatch(spaceBodies.size());
                 for (SpaceBody body : spaceBodies) {
                     tasks.add(body::updateVelocity);
                 }
-                while (!simulationStepDone) {
-                    Thread.sleep(10);
-                }
+                if (!remainingTasks.await(10, TimeUnit.SECONDS))
+                    throw new TimeoutException("Tasks took more than allowed 10 seconds to execute");
 
+                remainingTasks = new CountDownLatch(spaceBodies.size());
                 for (SpaceBody body : spaceBodies) {
                     tasks.add(body::updatePosition);
                 }
-                while (!simulationStepDone) {
-                    Thread.sleep(10);
-                }
+                if (!remainingTasks.await(10, TimeUnit.SECONDS))
+                    throw new TimeoutException("Tasks took more than allowed 10 seconds to execute");
             }
 
             System.out.println("Finished simulating");
+            Main.state = RunningState.CLOSING;
         } catch (Exception e) {
             System.err.println("An error occurred on the simulating thread");
             e.printStackTrace();
@@ -85,7 +103,10 @@ public class Simulation {
     private void startWorkerThreads(int amount) {
         workerThreads.clear();
         for (int i = 0; i < amount; i++) {
-            workerThreads.add(new Thread(new Worker()));
+            workerThreads.add(new Thread(new Worker(),"Worker-"+i));
+        }
+        for (Thread thread : workerThreads) {
+            thread.start();
         }
     }
 
