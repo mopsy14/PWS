@@ -45,8 +45,8 @@ public class Simulation {
         if (simulationThread == null || !simulationThread.isAlive()) {
             Main.state = RunningState.SIMULATING;
             spaceBodies.clear();
-            spaceBodies.add(new Planet(1.495e11,0,0,5.9722e24,0,0,2.978e4,0));
-            spaceBodies.add(new Star(0,0,0,1.988416e30,0,0,0,0,0));
+            spaceBodies.add(new Planet(1.495e11,0,0,5.9722e24,6.371e6,0,2.978e4,0));
+            spaceBodies.add(new Star(0,0,0,1.988416e30,6.955e8,0,0,0,1000));
 
             simulationThread = new Thread("Simulation thread") {
                 @Override
@@ -88,9 +88,18 @@ public class Simulation {
                 }
                 if (!remainingTasks.await(10, TimeUnit.SECONDS))
                     throw new TimeoutException("Tasks took more than allowed 10 seconds to execute");
-            }
 
+                if (i%100==0) {
+                    remainingTasks = new CountDownLatch(spaceBodies.size());
+                    for (SpaceBody body : spaceBodies) {
+                        tasks.add(body::updateLighting);
+                    }
+                    if (!remainingTasks.await(10, TimeUnit.SECONDS))
+                        throw new TimeoutException("Tasks took more than allowed 10 seconds to execute");
+                }
+            }
             System.out.println("Finished simulating");
+            System.out.println("Planet received "+((Planet)spaceBodies.getFirst()).getReceivedLight()+"light");
             Main.state = RunningState.CLOSING;
         } catch (Exception e) {
             System.err.println("An error occurred on the simulating thread");

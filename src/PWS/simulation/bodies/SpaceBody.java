@@ -51,4 +51,5 @@ public abstract class SpaceBody {
         z += vz * Simulation.INSTANCE.getStepSize();
     }
 
+    public synchronized void updateLighting(){}
 }
