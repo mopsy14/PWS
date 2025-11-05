@@ -62,7 +62,7 @@ public class Simulation {
 
     private void setupSpaceBodies() {
         spaceBodies.add(new Star(2e10,0,0,1e30,6.955e8,0,70749.50934329,0,1000));
-        spaceBodies.add(new Star(-1e10,0,0,3e30,6.955e8,0,-23583.23478963,0,1000));
+        spaceBodies.add(new Star(-1e10,0,0,5e30,6.955e8,0,-23583.23478963,0,1000));
 
         spaceBodies.add(new Planet(2.5e11,0,0,5.972e24,6.371e6,0,32656.66327653,0));
 
@@ -81,23 +81,34 @@ public class Simulation {
         }
 
         boolean foundFirstStar = false;
-        for (SpaceBody body : spaceBodies) {
-            double dx = body.getX() - baryCentrumX;
-            double dy = body.getY() - baryCentrumY;
-            double dz = body.getZ() - baryCentrumZ;
-            double distanceToBC = Math.sqrt(dx*dx + dy*dy + dz*dz);
-            double weight = body.getMass() / totalMass;
-            double compensatedDX = body.getX() - (baryCentrumX - (body.getX() * weight));
-            double compensatedDY = body.getY() - (baryCentrumY - (body.getY() * weight));
-            double compensatedDZ = body.getZ() - (baryCentrumZ - (body.getZ() * weight));
-            double compensatedBCDistance = compensatedDX*compensatedDX + compensatedDY*compensatedDY + compensatedDZ*compensatedDZ;
+        for (SpaceBody self : spaceBodies) {
+            double dbx = self.getX() - baryCentrumX;
+            double dby = self.getY() - baryCentrumY;
+            double dbz = self.getZ() - baryCentrumZ;
+            double Fx = 0.0;
+            double Fy = 0.0;
+            double Fz = 0.0;
+            for (SpaceBody other : spaceBodies) {
+                if (other == self) continue;
+                double dx = self.getX() - other.getX();
+                double dy = self.getY() - other.getY();
+                double dz = self.getZ() - other.getZ();
+                double rSquared = dx*dx + dy*dy + dz*dz;
+                double r = Math.sqrt(rSquared);
+                double F = 6.674e-11 * self.getMass() * other.getMass() / rSquared;
+                Fx += F * dx / r;
+                Fy += F * dy / r;
+                Fz += F * dz / r;
+            }
+            double FTotal = Math.sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+            double distanceToBC = Math.sqrt(dbx*dbx + dby*dby + dbz*dbz);
 
-            double v = Math.sqrt(6.674e-11 * (totalMass - body.getMass()) * distanceToBC / compensatedBCDistance);
+            double v = Math.sqrt(FTotal * distanceToBC / self.getMass());
 
-            //body.setVy(foundFirstStar && body instanceof Star ? -v : v);
-            System.out.println(body.getVy());
+            self.setVy(foundFirstStar && self instanceof Star ? -v : v);
+            System.out.println(self.getVy());
 
-            foundFirstStar = foundFirstStar || body instanceof Star;
+            foundFirstStar = foundFirstStar || self instanceof Star;
         }
     }
 
