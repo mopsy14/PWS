@@ -45,8 +45,8 @@ public class Simulation {
         if (simulationThread == null || !simulationThread.isAlive()) {
             Main.state = RunningState.SIMULATING;
             spaceBodies.clear();
-            spaceBodies.add(new Planet(1.495e11,0,0,5.9722e24,6.371e6,0,2.978e4,0));
-            spaceBodies.add(new Star(0,0,0,1.988416e30,6.955e8,0,0,0,1000));
+
+            setupSpaceBodies();
 
             simulationThread = new Thread("Simulation thread") {
                 @Override
@@ -57,6 +57,47 @@ public class Simulation {
             simulationThread.start();
         } else {
             System.err.println("Cannot start simulating thread because the thread is still running");
+        }
+    }
+
+    private void setupSpaceBodies() {
+        spaceBodies.add(new Star(2e10,0,0,1e30,6.955e8,0,70749.50934329,0,1000));
+        spaceBodies.add(new Star(-1e10,0,0,3e30,6.955e8,0,-23583.23478963,0,1000));
+
+        spaceBodies.add(new Planet(2.5e11,0,0,5.972e24,6.371e6,0,32656.66327653,0));
+
+
+        double totalMass = 0.0;
+        double baryCentrumX = 0.0;
+        double baryCentrumY = 0.0;
+        double baryCentrumZ = 0.0;
+        for (SpaceBody body : spaceBodies) {
+            totalMass += body.getMass();
+        }
+        for (SpaceBody body : spaceBodies) {
+            baryCentrumX += body.getX() * body.getMass() / totalMass;
+            baryCentrumY += body.getY() * body.getMass() / totalMass;
+            baryCentrumZ += body.getZ() * body.getMass() / totalMass;
+        }
+
+        boolean foundFirstStar = false;
+        for (SpaceBody body : spaceBodies) {
+            double dx = body.getX() - baryCentrumX;
+            double dy = body.getY() - baryCentrumY;
+            double dz = body.getZ() - baryCentrumZ;
+            double distanceToBC = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            double weight = body.getMass() / totalMass;
+            double compensatedDX = body.getX() - (baryCentrumX - (body.getX() * weight));
+            double compensatedDY = body.getY() - (baryCentrumY - (body.getY() * weight));
+            double compensatedDZ = body.getZ() - (baryCentrumZ - (body.getZ() * weight));
+            double compensatedBCDistance = compensatedDX*compensatedDX + compensatedDY*compensatedDY + compensatedDZ*compensatedDZ;
+
+            double v = Math.sqrt(6.674e-11 * (totalMass - body.getMass()) * distanceToBC / compensatedBCDistance);
+
+            //body.setVy(foundFirstStar && body instanceof Star ? -v : v);
+            System.out.println(body.getVy());
+
+            foundFirstStar = foundFirstStar || body instanceof Star;
         }
     }
 
@@ -99,7 +140,7 @@ public class Simulation {
                 }
             }
             System.out.println("Finished simulating");
-            System.out.println("Planet received "+((Planet)spaceBodies.getFirst()).getReceivedLight()+"light");
+//            System.out.println("Planet received "+((Planet)spaceBodies.getFirst()).getReceivedLight()+"light");
             Main.state = RunningState.CLOSING;
         } catch (Exception e) {
             System.err.println("An error occurred on the simulating thread");

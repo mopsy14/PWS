@@ -3,14 +3,14 @@ package PWS.simulation.bodies;
 import PWS.simulation.Simulation;
 
 public abstract class SpaceBody {
-    public double x;
-    public double y;
-    public double z;
-    public double mass;
-    public double r;
-    public double vx;
-    public double vy;
-    public double vz;
+    protected double x;
+    protected double y;
+    protected double z;
+    protected double mass;
+    protected double r;
+    protected double vx;
+    protected double vy;
+    protected double vz;
 
     public SpaceBody(double x, double y, double z, double mass, double r, double vx, double vy, double vz) {
         this.x = x;
@@ -20,6 +20,72 @@ public abstract class SpaceBody {
         this.r = r;
         this.vx = vx;
         this.vy = vy;
+        this.vz = vz;
+    }
+
+    //Getters
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getZ() {
+        return z;
+    }
+
+    public double getMass() {
+        return mass;
+    }
+
+    public double getR() {
+        return r;
+    }
+
+    public double getVx() {
+        return vx;
+    }
+
+    public double getVy() {
+        return vy;
+    }
+
+    public double getVz() {
+        return vz;
+    }
+
+    //Setters
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
+    public void setZ(double z) {
+        this.z = z;
+    }
+
+    public void setMass(double mass) {
+        this.mass = mass;
+    }
+
+    public void setR(double r) {
+        this.r = r;
+    }
+
+    public void setVx(double vx) {
+        this.vx = vx;
+    }
+
+    public void setVy(double vy) {
+        this.vy = vy;
+    }
+
+    public void setVz(double vz) {
         this.vz = vz;
     }
 

@@ -13,7 +13,7 @@ public class Planet extends SpaceBody {
     }
 
     public double getReceivedLight() {
-        return receivedLight*Math.PI*r*r;
+        return receivedLight;
     }
 
     @Override

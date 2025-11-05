@@ -16,14 +16,24 @@ public class SimulationVisualizeFrame extends JFrame {
         @Override
         public void paint(Graphics g) {
             super.paint(g);
-            for(SpaceBody body : Simulation.INSTANCE.spaceBodies) {
+            for (SpaceBody body : Simulation.INSTANCE.spaceBodies) {
                     if (body instanceof Star) {
                         g.setColor(Color.YELLOW);
-                        g.fillOval((int) (body.x / 1e9) + g.getClipBounds().width / 2, -(int) (body.y / 1e9) + g.getClipBounds().height / 2, (int)(10*((body.z+2e11) / 2e11)), (int)(10*((body.z+2e11) / 2e11)));
+                        g.fillOval((int) (body.getX() / 1e9) + g.getClipBounds().width / 2, -(int) (body.getY() / 1e9) + g.getClipBounds().height / 2, (int)(10*((body.getZ()+2e11) / 2e11)), (int)(10*((body.getZ()+2e11) / 2e11)));
                     } else {
                         g.setColor(Color.GREEN);
-                        g.fillOval((int) (body.x / 1e9) + g.getClipBounds().width / 2, -(int) (body.y / 1e9) + g.getClipBounds().height / 2, (int)(10*((body.z+2e11) / 2e11)), (int)(10*((body.z+2e11)  / 2e11)));
+                        g.fillOval((int) (body.getX() / 1e9) + g.getClipBounds().width / 2, -(int) (body.getY() / 1e9) + g.getClipBounds().height / 2, (int)(10*((body.getZ()+2e11) / 2e11)), (int)(10*((body.getZ()+2e11)  / 2e11)));
                     }
+            }
+            {
+                SpaceBody first = Simulation.INSTANCE.spaceBodies.get(0);
+                SpaceBody second = Simulation.INSTANCE.spaceBodies.get(1);
+
+                double dx = (first.getX()-second.getX());
+                double dy = (first.getY()-second.getY());
+                double dz = (first.getZ()-second.getZ());
+
+                System.out.println(Math.sqrt(dx*dx+dy*dy+dz*dz));
             }
         }
     };
