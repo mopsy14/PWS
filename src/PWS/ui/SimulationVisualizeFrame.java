@@ -12,11 +12,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 public class SimulationVisualizeFrame extends JFrame {
+    private final Simulation simulation;
+
     JPanel componentContainer = new JPanel() {
         @Override
         public void paint(Graphics g) {
             super.paint(g);
-            for (SpaceBody body : Simulation.INSTANCE.spaceBodies) {
+            for (SpaceBody body : simulation.spaceBodies) {
                     if (body instanceof Star) {
                         g.setColor(Color.YELLOW);
                         g.fillOval((int) (body.getX() / 1e9) + g.getClipBounds().width / 2, -(int) (body.getY() / 1e9) + g.getClipBounds().height / 2, (int)(10*((body.getZ()+2e11) / 2e11)), (int)(10*((body.getZ()+2e11) / 2e11)));
@@ -25,20 +27,11 @@ public class SimulationVisualizeFrame extends JFrame {
                         g.fillOval((int) (body.getX() / 1e9) + g.getClipBounds().width / 2, -(int) (body.getY() / 1e9) + g.getClipBounds().height / 2, (int)(10*((body.getZ()+2e11) / 2e11)), (int)(10*((body.getZ()+2e11)  / 2e11)));
                     }
             }
-            {
-                SpaceBody first = Simulation.INSTANCE.spaceBodies.get(0);
-                SpaceBody second = Simulation.INSTANCE.spaceBodies.get(1);
-
-                double dx = (first.getX()-second.getX());
-                double dy = (first.getY()-second.getY());
-                double dz = (first.getZ()-second.getZ());
-
-                System.out.println(Math.sqrt(dx*dx+dy*dy+dz*dz));
-            }
         }
     };
-    public SimulationVisualizeFrame() {
+    public SimulationVisualizeFrame(Simulation simulation) {
         super("Simulation Visualization");
+        this.simulation = simulation;
         setResizable(false);
         setSize(1000,700);
         setLocation(400,0);

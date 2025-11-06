@@ -37,8 +37,13 @@ public class ConfigFrame extends JFrame {
         startButton.setSize(200,30);
         startButton.setLocation(400,620);
         startButton.addActionListener((event)->{
-            dispose();
+            //dispose();
             Simulation simulation = new Simulation(enableSimulationRenderingBox.isSelected());
+            synchronized (Main.simulationInstances) {
+                if (Main.state==RunningState.CLOSING)
+                    return;
+                Main.simulationInstances.add(simulation);
+            }
             simulation.startSimulation();
         });
         componentContainer.add(startButton);

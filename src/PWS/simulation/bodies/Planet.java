@@ -8,8 +8,8 @@ import java.util.List;
 public class Planet extends SpaceBody {
     double receivedLight = 0;
 
-    public Planet(double x, double y, double z, double mass, double r, double vx, double vy, double vz) {
-        super(x, y, z, mass, r, vx, vy, vz);
+    public Planet(double x, double y, double z, double mass, double r, double vx, double vy, double vz, Simulation simulation) {
+        super(x, y, z, mass, r, vx, vy, vz, simulation);
     }
 
     public double getReceivedLight() {
@@ -18,7 +18,7 @@ public class Planet extends SpaceBody {
 
     @Override
     public synchronized void updateLighting() {
-        for (SpaceBody body : Simulation.INSTANCE.spaceBodies) {
+        for (SpaceBody body : simulation.spaceBodies) {
             if (body instanceof Star star) {
                 double squared_distance = (star.x-x)*(star.x-x)+(star.y-y)*(star.y-y)+(star.z-z)*(star.z-z) - r*r - star.r*star.r;
                 if (isPathEmpty(star, squared_distance)) {
@@ -37,7 +37,7 @@ public class Planet extends SpaceBody {
         double dyStep = (star.y-y) / steps;
         double dzStep = (star.z-z) / steps;
         List<SpaceBody> bodies = new ArrayList<>();
-        for (SpaceBody body : Simulation.INSTANCE.spaceBodies) {
+        for (SpaceBody body : simulation.spaceBodies) {
             if (body != this && body != star)
                 bodies.add(body);
         }
@@ -58,5 +58,21 @@ public class Planet extends SpaceBody {
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Planet{" +
+                "receivedLight=" + receivedLight +
+                ", x=" + x +
+                ", y=" + y +
+                ", z=" + z +
+                ", mass=" + mass +
+                ", r=" + r +
+                ", vx=" + vx +
+                ", vy=" + vy +
+                ", vz=" + vz +
+                ", simulation=" + simulation +
+                '}';
     }
 }

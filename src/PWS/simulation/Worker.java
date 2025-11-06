@@ -1,19 +1,24 @@
 package PWS.simulation;
 
-import PWS.Main;
-import PWS.RunningState;
-
 public class Worker implements Runnable {
+    private Simulation simulation;
+    public Worker(Simulation simulation) {
+        this.simulation = simulation;
+    }
+
+    public void setSimulation(Simulation simulation) {
+        this.simulation = simulation;
+    }
 
     @Override
     public void run() {
-        while (Main.state == RunningState.SIMULATING) {
-            Runnable runnable = Simulation.INSTANCE.tasks.poll();
+        while (simulation.getSimulationState() == SimulationState.STARTING || simulation.getSimulationState() == SimulationState.RUNNING) {
+            Runnable runnable = simulation.tasks.poll();
             if (runnable != null) {
                 try {
                     runnable.run();
                 } finally {
-                    Simulation.INSTANCE.remainingTasks.countDown();
+                    simulation.remainingTasks.countDown();
                 }
             }
         }

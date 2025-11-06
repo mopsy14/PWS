@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class Simulation {
-    public static Simulation INSTANCE = null;
     Thread simulationThread = null;
     ArrayList<Thread> workerThreads = new ArrayList<>();
     public List<SpaceBody> spaceBodies = new ArrayList<>();
@@ -24,21 +23,21 @@ public class Simulation {
     SimulationControlFrame controlFrame;
     SimulationVisualizeFrame visualizeFrame;
     volatile CountDownLatch remainingTasks = null;
-    double stepSize = 1;
-    long stepAmount = 15_768_000;
+    private volatile SimulationState state = SimulationState.STARTING;
+    double stepSize = 60;
+    long stepAmount = (long)1e7;
 
     //Configuration:
     public boolean useUI;
 
     public Simulation(boolean useUI) {
-        INSTANCE = this;
 
         //Configuration:
         this.useUI = useUI;
 
-        controlFrame = new SimulationControlFrame();
+        controlFrame = new SimulationControlFrame(this);
         if (useUI)
-            visualizeFrame = new SimulationVisualizeFrame();
+            visualizeFrame = new SimulationVisualizeFrame(this);
     }
 
     public void startSimulation() {
@@ -46,7 +45,7 @@ public class Simulation {
             Main.state = RunningState.SIMULATING;
             spaceBodies.clear();
 
-            setupSpaceBodies();
+            setupSpaceBodiesForSolarSystem(7.45971279e10);
 
             simulationThread = new Thread("Simulation thread") {
                 @Override
@@ -61,11 +60,10 @@ public class Simulation {
     }
 
     private void setupSpaceBodies() {
-        spaceBodies.add(new Star(2e10,0,0,1e30,6.955e8,0,70749.50934329,0,1000));
-        spaceBodies.add(new Star(-1e10,0,0,5e30,6.955e8,0,-23583.23478963,0,1000));
+        spaceBodies.add(new Star(4e10,0,0,1e30,6.955e8,0,0,0,1000, this));
+        spaceBodies.add(new Star(-4e10,0,0,1e30,6.955e8,0,0,0,1000, this));
 
-        spaceBodies.add(new Planet(2.5e11,0,0,5.972e24,6.371e6,0,32656.66327653,0));
-
+        spaceBodies.add(new Planet(0.9e11,0,0,1e25,6.371e6,0,0,0, this));
 
         double totalMass = 0.0;
         double baryCentrumX = 0.0;
@@ -105,22 +103,78 @@ public class Simulation {
 
             double v = Math.sqrt(FTotal * distanceToBC / self.getMass());
 
-            self.setVy(foundFirstStar && self instanceof Star ? -v : v);
+            self.setVy(foundFirstStar && self instanceof Star ? -v : (self instanceof Planet)? -v:v);
             System.out.println(self.getVy());
 
             foundFirstStar = foundFirstStar || self instanceof Star;
         }
     }
 
+    private void setupSpaceBodiesForSolarSystem(double rPlanetOrbit) {
+        spaceBodies.add(new Star(0,0,0,2e30,6.955e8,0,0,0,3.828e26, this));
+
+        spaceBodies.add(new Planet(rPlanetOrbit,0,0,6e24,6.371e6,0,0,0, this));
+
+        double totalMass = 0.0;
+        double baryCentrumX = 0.0;
+        double baryCentrumY = 0.0;
+        double baryCentrumZ = 0.0;
+        for (SpaceBody body : spaceBodies) {
+            totalMass += body.getMass();
+        }
+        for (SpaceBody body : spaceBodies) {
+            baryCentrumX += body.getX() * body.getMass() / totalMass;
+            baryCentrumY += body.getY() * body.getMass() / totalMass;
+            baryCentrumZ += body.getZ() * body.getMass() / totalMass;
+        }
+
+        boolean foundFirstStar = false;
+        for (SpaceBody self : spaceBodies) {
+            double dbx = self.getX() - baryCentrumX;
+            double dby = self.getY() - baryCentrumY;
+            double dbz = self.getZ() - baryCentrumZ;
+            double Fx = 0.0;
+            double Fy = 0.0;
+            double Fz = 0.0;
+            for (SpaceBody other : spaceBodies) {
+                if (other == self) continue;
+                double dx = self.getX() - other.getX();
+                double dy = self.getY() - other.getY();
+                double dz = self.getZ() - other.getZ();
+                double rSquared = dx*dx + dy*dy + dz*dz;
+                double r = Math.sqrt(rSquared);
+                double F = 6.674e-11 * self.getMass() * other.getMass() / rSquared;
+                Fx += F * dx / r;
+                Fy += F * dy / r;
+                Fz += F * dz / r;
+            }
+            double FTotal = Math.sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+            double distanceToBC = Math.sqrt(dbx*dbx + dby*dby + dbz*dbz);
+
+            double v = Math.sqrt(FTotal * distanceToBC / self.getMass());
+
+            self.setVy(foundFirstStar && self instanceof Star ? -v : (self instanceof Planet)? -v:v);
+            System.out.println(self.getVy());
+
+            foundFirstStar = foundFirstStar || self instanceof Star;
+        }
+    }
 
     private void runSimulation() {
         try {
             System.out.println("Started simulating");
 
-            startWorkerThreads(4);
+            startWorkerThreads(2);
+
+            state = SimulationState.RUNNING;
 
             for (int i = 0; i < stepAmount; i++) {
-                if (i%10000==0) {
+                if (Main.state != RunningState.SIMULATING) {
+                    state = SimulationState.STOPPING;
+                    simulationThread = null;
+                    return;
+                }
+                if (i % 10000 == 0) {
                     visualizeFrame.updateVisualization();
 
                     if (i % 1000000 == 0) {
@@ -141,7 +195,7 @@ public class Simulation {
                 if (!remainingTasks.await(10, TimeUnit.SECONDS))
                     throw new TimeoutException("Tasks took more than allowed 10 seconds to execute");
 
-                if (i%100==0) {
+                if (i % 100 == 0) {
                     remainingTasks = new CountDownLatch(spaceBodies.size());
                     for (SpaceBody body : spaceBodies) {
                         tasks.add(body::updateLighting);
@@ -150,21 +204,29 @@ public class Simulation {
                         throw new TimeoutException("Tasks took more than allowed 10 seconds to execute");
                 }
             }
+            state = SimulationState.STOPPING;
             System.out.println("Finished simulating");
-//            System.out.println("Planet received "+((Planet)spaceBodies.getFirst()).getReceivedLight()+"light");
-            Main.state = RunningState.CLOSING;
+            for (SpaceBody body : spaceBodies) {
+                if (body instanceof Planet planet) {
+                    System.out.println("Planet received "+planet.getReceivedLight()+" light");
+                }
+            }
+        } catch (TimeoutException e) {
+            if (Main.state == RunningState.SIMULATING) {
+                throw new RuntimeException(e);
+            }
         } catch (Exception e) {
             System.err.println("An error occurred on the simulating thread");
             e.printStackTrace();
         }
-
+        disposeAWT();
         simulationThread = null;
     }
 
     private void startWorkerThreads(int amount) {
         workerThreads.clear();
         for (int i = 0; i < amount; i++) {
-            workerThreads.add(new Thread(new Worker(),"Worker-"+i));
+            workerThreads.add(new Thread(new Worker(this),"Worker-"+i));
         }
         for (Thread thread : workerThreads) {
             thread.start();
@@ -180,5 +242,14 @@ public class Simulation {
 
     public double getStepSize() {
         return stepSize;
+    }
+    public SimulationState getSimulationState() {
+        return state;
+    }
+    public void interruptThread() {
+        try {
+            simulationThread.interrupt();
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -11,8 +11,9 @@ public abstract class SpaceBody {
     protected double vx;
     protected double vy;
     protected double vz;
+    protected final Simulation simulation;
 
-    public SpaceBody(double x, double y, double z, double mass, double r, double vx, double vy, double vz) {
+    public SpaceBody(double x, double y, double z, double mass, double r, double vx, double vy, double vz, Simulation simulation) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -21,6 +22,7 @@ public abstract class SpaceBody {
         this.vx = vx;
         this.vy = vy;
         this.vz = vz;
+        this.simulation = simulation;
     }
 
     //Getters
@@ -93,7 +95,7 @@ public abstract class SpaceBody {
         double ax = 0;
         double ay = 0;
         double az = 0;
-        for (SpaceBody body : Simulation.INSTANCE.spaceBodies) {
+        for (SpaceBody body : simulation.spaceBodies) {
             if (body==this)
                 continue;
             double dx = (body.x-this.x);
@@ -106,15 +108,15 @@ public abstract class SpaceBody {
             ay += multiplier * dy;
             az += multiplier * dz;
         }
-        this.vx += ax * Simulation.INSTANCE.getStepSize();
-        this.vy += ay * Simulation.INSTANCE.getStepSize();
-        this.vz += az * Simulation.INSTANCE.getStepSize();
+        this.vx += ax * simulation.getStepSize();
+        this.vy += ay * simulation.getStepSize();
+        this.vz += az * simulation.getStepSize();
     }
 
     public synchronized void updatePosition() {
-        x += vx * Simulation.INSTANCE.getStepSize();
-        y += vy * Simulation.INSTANCE.getStepSize();
-        z += vz * Simulation.INSTANCE.getStepSize();
+        x += vx * simulation.getStepSize();
+        y += vy * simulation.getStepSize();
+        z += vz * simulation.getStepSize();
     }
 
     public synchronized void updateLighting(){}
