@@ -26,6 +26,7 @@ public class Simulation {
     private volatile SimulationState state = SimulationState.STARTING;
     double stepSize = 60;
     long stepAmount = (long)1e7;
+    private SimulationStartData startData = null;
 
     //Configuration:
     public boolean useUI;
@@ -40,7 +41,7 @@ public class Simulation {
             visualizeFrame = new SimulationVisualizeFrame(this);
     }
 
-    public void startSimulation() {
+    public void startSolarSimulation() {
         if (simulationThread == null || !simulationThread.isAlive()) {
             Main.state = RunningState.SIMULATING;
             spaceBodies.clear();
@@ -58,12 +59,31 @@ public class Simulation {
             System.err.println("Cannot start simulating thread because the thread is still running");
         }
     }
+    public void startSimulation(SimulationStartData startData) {
+        if (simulationThread == null || !simulationThread.isAlive()) {
+            Main.state = RunningState.SIMULATING;
+            spaceBodies.clear();
 
-    private void setupSpaceBodies() {
-        spaceBodies.add(new Star(4e10,0,0,1e30,6.955e8,0,0,0,1000, this));
-        spaceBodies.add(new Star(-4e10,0,0,1e30,6.955e8,0,0,0,1000, this));
+            this.startData = startData;
+            setupSpaceBodies(startData.rPlanet(), startData.rStars(), 3.828e26);
 
-        spaceBodies.add(new Planet(0.9e11,0,0,1e25,6.371e6,0,0,0, this));
+            simulationThread = new Thread("Simulation thread") {
+                @Override
+                public void run() {
+                    runSimulation();
+                }
+            };
+            simulationThread.start();
+        } else {
+            System.err.println("Cannot start simulating thread because the thread is still running");
+        }
+    }
+
+    private void setupSpaceBodies(double rPlanet, double rStars, double luminosity) {
+        spaceBodies.add(new Star(rStars,0,0,1e30,3e8,0,0,0,luminosity, this));
+        spaceBodies.add(new Star(-rStars,0,0,1e30,3e8,0,0,0,luminosity, this));
+
+        spaceBodies.add(new Planet(rPlanet,0,0,6e24,6.371e6,0,0,0, this));
 
         double totalMass = 0.0;
         double baryCentrumX = 0.0;
@@ -164,14 +184,16 @@ public class Simulation {
         try {
             System.out.println("Started simulating");
 
-            startWorkerThreads(2);
+            startWorkerThreads(3);
 
             state = SimulationState.RUNNING;
 
             for (int i = 0; i < stepAmount; i++) {
                 if (Main.state != RunningState.SIMULATING) {
+                    Main.simulationInstances.remove(this);
                     state = SimulationState.STOPPING;
                     simulationThread = null;
+                    Main.runningSimulations.addAndGet(-1);
                     return;
                 }
                 if (i % 10000 == 0) {
@@ -208,10 +230,19 @@ public class Simulation {
             System.out.println("Finished simulating");
             for (SpaceBody body : spaceBodies) {
                 if (body instanceof Planet planet) {
-                    System.out.println("Planet received "+planet.getReceivedLight()+" light");
+                    if(startData==null){
+                        System.out.println(planet.getReceivedLight());
+                    } else {
+                        SimulationData data = new SimulationData(startData.rPlanet(), startData.rStars(), planet.getReceivedLight());
+                        Main.allData.add(data);
+                        Main.newDataSet.add(data);
+                        System.out.println(data);
+                    }
                 }
             }
         } catch (TimeoutException e) {
+            Main.simulationInstances.remove(this);
+            Main.runningSimulations.addAndGet(-1);
             if (Main.state == RunningState.SIMULATING) {
                 throw new RuntimeException(e);
             }
@@ -221,6 +252,8 @@ public class Simulation {
         }
         disposeAWT();
         simulationThread = null;
+        Main.simulationInstances.remove(this);
+        Main.runningSimulations.addAndGet(-1);
     }
 
     private void startWorkerThreads(int amount) {
