@@ -19,6 +19,7 @@ public class Main {
     public static AtomicInteger runningSimulations = new AtomicInteger();
     public static int phasesInCycle;
     private static final Random random = new Random();
+    public static volatile double referenceLightIntensity = 0.0;
 
     @SuppressWarnings("CallToPrintStackTrace")
     public static void main(String[] args) {
@@ -28,28 +29,42 @@ public class Main {
             configFrame = new ConfigFrame();
 
 
-//            Simulation simulation = new Simulation(true);
-//            synchronized (Main.simulationInstances) {
-//                if (Main.state == RunningState.CLOSING)
-//                    return;
-//                Main.simulationInstances.add(simulation);
-//            }
-//            Main.runningSimulations.addAndGet(1);
-//            simulation.startSolarSimulation();
-
+            Simulation simulation = new Simulation(true);
+            synchronized (Main.simulationInstances) {
+                if (Main.state == RunningState.CLOSING)
+                    return;
+                Main.simulationInstances.add(simulation);
+            }
+            Main.runningSimulations.addAndGet(1);
+            simulation.startSolarSimulation();
 
             while (true) {
-
-                if (runningSimulations.get() == 0) {
-                    if (phasesInCycle < 5) {
+                if (runningSimulations.get() == 0 && state == RunningState.SIMULATING) {
+                    if (phasesInCycle < 12) {
                         phasesInCycle++;
-
+                        System.out.println("Started phase " + phasesInCycle);
+                        startNewSimulationSet();
                     } else {
                         phasesInCycle = 0;
+                        System.out.println("================================");
+                        System.out.println("Finished cycle " + cycle);
+                        System.out.println("================================");
                         cycle++;
-
+                        synchronized (currentDataSet) {
+                            synchronized (newDataSet) {
+                                currentDataSet.addAll(newDataSet);
+                                double reference = referenceLightIntensity;
+                                currentDataSet.sort(Comparator.comparingDouble((data) -> Math.abs(reference - data.receivedLight())));
+                                currentDataSet = Collections.synchronizedList(currentDataSet.subList(0, currentDataSet.size() / 2));
+                                newDataSet = Collections.synchronizedList(new ArrayList<>());
+                            }
+                        }
+                        if (cycle == 12)
+                            break;
                     }
                 }
+
+                Thread.sleep(100);
 
                 if (state == RunningState.CLOSING)
                     break;
@@ -58,6 +73,12 @@ public class Main {
         } catch (Exception e) {
             System.err.println("An error occurred, closing application");
             e.printStackTrace();
+        }
+
+        synchronized (currentDataSet) {
+            for (SimulationData data : currentDataSet) {
+                System.out.println(data);
+            }
         }
 
         configFrame.dispose();
@@ -86,15 +107,15 @@ public class Main {
     private static List<SimulationStartData> generateStartData() {
         List<SimulationStartData> result = new ArrayList<>();
         if (cycle == 0) {
-            for (int i = 0; i < 10; i++) {
-                double rStars = random.nextDouble(1e9,5e10);
-                double rPlanet = random.nextDouble(2*rStars,5e11);
+            for (int i = 0; i < 3; i++) {
+                double rStars = random.nextDouble(1e9,5e9);
+                double rPlanet = random.nextDouble(3*rStars,2e10);
                 result.add(new SimulationStartData(rPlanet, rStars));
             }
         } else {
             synchronized (currentDataSet) {
-                double cycleBorder = (5e10-1e9)/cycle;
-                for (int i = 0; i < 10; i++) {
+                double cycleBorder = (1e10-1e9)/(Math.pow(Math.E,0.25*cycle+0.25));
+                for (int i = 0; i < 3; i++) {
                     SimulationData originData = currentDataSet.get(random.nextInt(currentDataSet.size()));
                     while (true) {
                         SimulationStartData startData = new SimulationStartData(originData.rPlanet() + random.nextDouble(-cycleBorder, cycleBorder), originData.rStars() + random.nextDouble(-cycleBorder, cycleBorder));
@@ -109,6 +130,6 @@ public class Main {
         return result;
     }
     private static boolean inLimits(SimulationStartData startData) {
-        return startData.rStars() > 1e9 && startData.rStars() < 5e10 && startData.rPlanet() > 2*startData.rStars() && startData.rPlanet() < 5e11;
+        return startData.rStars() > 1e9 && startData.rStars() < 5e9 && startData.rPlanet() > 3*startData.rStars() && startData.rPlanet() < 2e10;
     }
 }

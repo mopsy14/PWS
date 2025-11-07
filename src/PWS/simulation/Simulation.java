@@ -24,8 +24,8 @@ public class Simulation {
     SimulationVisualizeFrame visualizeFrame;
     volatile CountDownLatch remainingTasks = null;
     private volatile SimulationState state = SimulationState.STARTING;
-    double stepSize = 60;
-    long stepAmount = (long)1e7;
+    double stepSize = 120;
+    long stepAmount = (long)1e6;
     private SimulationStartData startData = null;
 
     //Configuration:
@@ -46,7 +46,7 @@ public class Simulation {
             Main.state = RunningState.SIMULATING;
             spaceBodies.clear();
 
-            setupSpaceBodiesForSolarSystem(7.45971279e10);
+            setupSpaceBodiesForSolarSystem(7.45971279e9);
 
             simulationThread = new Thread("Simulation thread") {
                 @Override
@@ -65,7 +65,7 @@ public class Simulation {
             spaceBodies.clear();
 
             this.startData = startData;
-            setupSpaceBodies(startData.rPlanet(), startData.rStars(), 3.828e26);
+            setupSpaceBodies(startData.rPlanet(), startData.rStars(), 6.546e26);
 
             simulationThread = new Thread("Simulation thread") {
                 @Override
@@ -124,7 +124,6 @@ public class Simulation {
             double v = Math.sqrt(FTotal * distanceToBC / self.getMass());
 
             self.setVy(foundFirstStar && self instanceof Star ? -v : (self instanceof Planet)? -v:v);
-            System.out.println(self.getVy());
 
             foundFirstStar = foundFirstStar || self instanceof Star;
         }
@@ -174,7 +173,6 @@ public class Simulation {
             double v = Math.sqrt(FTotal * distanceToBC / self.getMass());
 
             self.setVy(foundFirstStar && self instanceof Star ? -v : (self instanceof Planet)? -v:v);
-            System.out.println(self.getVy());
 
             foundFirstStar = foundFirstStar || self instanceof Star;
         }
@@ -231,7 +229,8 @@ public class Simulation {
             for (SpaceBody body : spaceBodies) {
                 if (body instanceof Planet planet) {
                     if(startData==null){
-                        System.out.println(planet.getReceivedLight());
+                        System.out.println("Solar system received " + planet.getReceivedLight() + " light");
+                        Main.referenceLightIntensity = planet.getReceivedLight();
                     } else {
                         SimulationData data = new SimulationData(startData.rPlanet(), startData.rStars(), planet.getReceivedLight());
                         Main.allData.add(data);
