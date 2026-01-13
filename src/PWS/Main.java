@@ -4,6 +4,7 @@ import PWS.simulation.Simulation;
 import PWS.simulation.SimulationData;
 import PWS.simulation.SimulationStartData;
 import PWS.ui.ConfigFrame;
+import PWS.ui.SimulationDataVisualizeFrame;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,7 +25,7 @@ public class Main {
     @SuppressWarnings("CallToPrintStackTrace")
     public static void main(String[] args) {
         Logger.initLoggers();
-
+        SimulationDataVisualizeFrame visualizeFrame = null;
         try {
             configFrame = new ConfigFrame();
 
@@ -38,9 +39,15 @@ public class Main {
             Main.runningSimulations.addAndGet(1);
             simulation.startSolarSimulation();
 
+            visualizeFrame = new SimulationDataVisualizeFrame();
+            int counter = 0;
+
             while (true) {
+                counter++;
+                if (counter % 10 == 0)
+                    visualizeFrame.updateVisualization();
                 if (runningSimulations.get() == 0 && state == RunningState.SIMULATING) {
-                    if (phasesInCycle < 12) {
+                    if (phasesInCycle < 50) {
                         phasesInCycle++;
                         System.out.println("Started phase " + phasesInCycle);
                         startNewSimulationSet();
@@ -59,7 +66,7 @@ public class Main {
                                 newDataSet = Collections.synchronizedList(new ArrayList<>());
                             }
                         }
-                        if (cycle == 12)
+                        if (cycle == 50)
                             break;
                     }
                 }
@@ -82,6 +89,7 @@ public class Main {
         }
 
         configFrame.dispose();
+        visualizeFrame.dispose();
         synchronized (simulationInstances) {
             for (Simulation simulation : simulationInstances) {
                 simulation.disposeAWT();

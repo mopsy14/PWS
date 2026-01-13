@@ -30,3 +30,4 @@ bin/
 .idea/
 PWS.iml
 logs/
+build/
