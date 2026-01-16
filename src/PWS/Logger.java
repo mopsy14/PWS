@@ -138,7 +138,7 @@ public class Logger {
                 getStringFromIntMillisecondTimeData(Calendar.getInstance().get(Calendar.MILLISECOND)) + "] ["+
                 Thread.currentThread().getName()+"] [ERROR] ";
     }
-    private static String getStringFromIntTimeData(int timeNumber){
+    public static String getStringFromIntTimeData(int timeNumber){
         String res = String.valueOf(timeNumber);
         return res.length() >= 2 ? res : "0"+res;
     }

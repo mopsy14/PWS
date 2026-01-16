@@ -24,6 +24,8 @@ public class Main {
 
     @SuppressWarnings("CallToPrintStackTrace")
     public static void main(String[] args) {
+        DataFileWriter.createFile();
+
         Logger.initLoggers();
         SimulationDataVisualizeFrame visualizeFrame = null;
         try {
@@ -66,7 +68,7 @@ public class Main {
                                 newDataSet = Collections.synchronizedList(new ArrayList<>());
                             }
                         }
-                        if (cycle == 50)
+                        if (cycle == 20)
                             break;
                     }
                 }
@@ -86,6 +88,7 @@ public class Main {
             for (SimulationData data : currentDataSet) {
                 System.out.println(data);
             }
+            DataFileWriter.writeResultsFile();
         }
 
         configFrame.dispose();
@@ -116,13 +119,13 @@ public class Main {
         List<SimulationStartData> result = new ArrayList<>();
         if (cycle == 0) {
             for (int i = 0; i < 3; i++) {
-                double rStars = random.nextDouble(1e9,5e9);
-                double rPlanet = random.nextDouble(3*rStars,2e10);
+                double rStars = random.nextDouble(1e9,1.5e11);
+                double rPlanet = random.nextDouble(3*rStars,8e11);
                 result.add(new SimulationStartData(rPlanet, rStars));
             }
         } else {
             synchronized (currentDataSet) {
-                double cycleBorder = (1e10-1e9)/(Math.pow(Math.E,0.25*cycle+0.25));
+                double cycleBorder = (1.5e11-1e9)/(Math.pow(Math.E,0.25*cycle+0.25));
                 for (int i = 0; i < 3; i++) {
                     SimulationData originData = currentDataSet.get(random.nextInt(currentDataSet.size()));
                     while (true) {
@@ -138,6 +141,6 @@ public class Main {
         return result;
     }
     private static boolean inLimits(SimulationStartData startData) {
-        return startData.rStars() > 1e9 && startData.rStars() < 5e9 && startData.rPlanet() > 3*startData.rStars() && startData.rPlanet() < 2e10;
+        return startData.rStars() > 1e9 && startData.rStars() < 1.5e11 && startData.rPlanet() > 2*startData.rStars() && startData.rPlanet() < 8e11;
     }
 }

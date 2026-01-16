@@ -24,8 +24,8 @@ public class Simulation {
     SimulationVisualizeFrame visualizeFrame;
     volatile CountDownLatch remainingTasks = null;
     private volatile SimulationState state = SimulationState.STARTING;
-    double stepSize = 120;
-    long stepAmount = (long)1e6;
+    double stepSize = 60;
+    long stepAmount = (long)2.5e6;
     private SimulationStartData startData = null;
 
     //Configuration:
@@ -46,7 +46,7 @@ public class Simulation {
             Main.state = RunningState.SIMULATING;
             spaceBodies.clear();
 
-            setupSpaceBodiesForSolarSystem(7.45971279e9);
+            setupSpaceBodiesForSolarSystem(1.78013944e11);
 
             simulationThread = new Thread("Simulation thread") {
                 @Override

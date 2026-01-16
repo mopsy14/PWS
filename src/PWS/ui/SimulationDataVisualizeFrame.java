@@ -12,10 +12,10 @@ import java.awt.event.WindowEvent;
 public class SimulationDataVisualizeFrame extends JFrame {
 
     private static final double rStarsMin = 7e8;
-    private static final double rStarsMax = 5e9;
+    private static final double rStarsMax = 2e11;
     private static final double rStarsRange = rStarsMax - rStarsMin;
     private static final double rPlanetMin = 8e9;
-    private static final double rPlanetMax = 4e10;
+    private static final double rPlanetMax = 1e12;
     private static final double rPlanetRange = rPlanetMax - rPlanetMin;
 
     JPanel componentContainer = new JPanel() {
